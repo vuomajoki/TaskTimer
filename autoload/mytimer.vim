@@ -31,43 +31,55 @@ fu! mytimer#check_time()
 endfunction
 
 
-fu! mytimer#define_accent(accent)
-
-endfunction
 
 fu! mytimer#close()
-    bd!
-    unlet g:timer_running
+    if exists("g:timer_running")
+        unlet g:timer_running
+    endif
+    silent w
+    " Avoid calling twice
+    au! * <buffer> 
+    silent Bdelete 
+    " echo "closed"
 endfu
 
 
 fu! mytimer#done()
-    let cool = bufadd("Cool")
     " This is for full screen stuff
     " This just writes all
-    wa
-    tabnew Cool
+    " Add more accents
+    " Int is nice to have red before end so th
+    edit ~/doc/MyTimer 
+    let cool = bufnr()
+    echo cool
     call airline#parts#define_accent('mytimer', 'red')
-    let g:airline_section_y = airline#section#create_right(['mytimer'])
+    let g:airline_section_y = airline#section#create(['mytimer'])
     AirlineRefresh
 
-    " nmap <buffer> <cr> :bd!<cr>
-    " nmap <buffer> <cr> :q<cr>
-    set modifiable
-    normal Gdgg
-    let lines = [s:mymessage,"time is up ".s:duration]
-    call appendbufline(cool,0,lines)
+    au! * <buffer> 
+    au BufLeave <buffer> call mytimer#close()
+
+    let lines = [s:mymessage,"time is up ".s:duration,""]
+    " call appendbufline(cool,0,lines)
+    call append(line("$"),lines)
+    nmap <buffer> <esc><esc> :call mytimer#close()<cr>
+    nmap <buffer> <space><cr> :call mytimer#close()<cr>
     normal G
-    nmap <buffer> <cr> :call mytimer#close()<cr>
+    " call feedkeys("\e")
 
 endfunction
 
 
 fu! mytimer#star_timer()
-    let dur = eval(input("How many seconds? "))
-    if dur != ""
-       let s:duration = dur
+    " ask task
+    " set current timestamp
+    edit ~/doc/MyTimer 
+    let in = input("How many seconds to set the timer? (".s:duration.") ")
+    if in!= ""
+       let s:duration = eval(in) 
     endif
+    redraw
+    echo "Timer set to ".s:duration." seconds"
     " this is important that things will end
     let s:done = 0
     if !exists("s:mytimer")
@@ -88,6 +100,10 @@ fu! mytimer#init_timer()
     let s:mytimer = timer_start(s:interval,"mytimer#timer_event", { "repeat" : -1 })
 endfunction
 
-if !exists("s:timer")
+if !exists("s:mytimer")
     call mytimer#init_timer()
 endif
+
+call mytimer#init_timer()
+
+
