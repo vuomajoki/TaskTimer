@@ -21,6 +21,8 @@ fu! mytimer#check_time()
     let diff = cur-s:mytime
     let left = s:duration - diff
     " add here different message after done
+    "
+    " Todo make conditional here
     if diff >= s:duration || s:done
         return "Done: ".left
         let s:done = 1
@@ -28,42 +30,34 @@ fu! mytimer#check_time()
     return "Timer: ".left
 endfunction
 
+
+fu! mytimer#define_accent(accent)
+
+endfunction
+
+fu! mytimer#close()
+    bd!
+    unlet g:timer_running
+
 fu! mytimer#done()
     let cool = bufadd("Cool")
     " This is for full screen stuff
     " This just writes all
     wa
     tabnew Cool
-
-    " call airline#parts#define_function('mytimer', 'mytimer#check_time')
     call airline#parts#define_accent('mytimer', 'red')
-    " let g:airline_section_y = airline#section#create_right(['ffenc','mytimer'])
+    let g:airline_section_y = airline#section#create_right(['mytimer'])
     AirlineRefresh
 
-    " exec "b ".cool
-    " split Cool
-    " resize 3
-    nmap <buffer> <cr> :bd!<cr>
+    " nmap <buffer> <cr> :bd!<cr>
     " nmap <buffer> <cr> :q<cr>
     set modifiable
-    "normal Gdgg
+    normal Gdgg
     let lines = [s:mymessage,"time is up ".s:duration]
     call appendbufline(cool,0,lines)
-
-    " " Change to append
-    " let line = 0
-    " call setbufline(cool,line,s:mymessage)
-    " let line += 1
-    " call setbufline(cool,line,"timediff ".(localtime()-s:mytime))
-    " let line += 1
-    " call setbufline(cool,line,"mytime ".s:duration)
-    " let line += 1
-    " call setbufline(cool,line,"buf ".cool)
-    " call append(0,s:mymessage)
     normal G
-    " set hidden
-    " let s:mywin = winnr()
-    " wincmd j
+    nmap <buffer> <cr> :call mytimer#close()<cr>
+
 endfunction
 
 
@@ -79,6 +73,7 @@ fu! mytimer#star_timer()
     call AirlineInit()
     AirlineRefresh
     let s:mytime = localtime()
+    let g:timer_running = 0
 endfunction
 
 fu! mytimer#init_timer()
