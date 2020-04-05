@@ -38,6 +38,8 @@ endfunction
 fu! mytimer#close()
     bd!
     unlet g:timer_running
+endfu
+
 
 fu! mytimer#done()
     let cool = bufadd("Cool")
