@@ -72,7 +72,6 @@ fu! mytimer#parse_line(line)
     let seconds = 0
     if idx >= 0
         let list = split(strpart(a:line,idx+5)," ",'\W\+')
-        echo list
         let readNumber = 1
         let number = 0
         for item in list
@@ -82,28 +81,45 @@ fu! mytimer#parse_line(line)
             else
                 let readNumber = 1
                 " equal ignore case
-                if item ==? "min" || item ==? "minutes" || item ==? "m"
+                if item ==? "min" || item ==? "minutes" || item ==? "minute" || item ==? "m"
                     let minutes = number
-                elseif item ==? "sec" || item ==? "seconds" || item ==? "s"
+                elseif item ==? "sec" || item ==? "seconds" || item==? "second" || item ==? "s"
                     let seconds = number
-                elseif item ==? "hour" || item ==? "hours" || item ==? "h"
+                elseif item ==? "hour" || item ==? "hours" || item ==? "hour" || item ==? "h"
                     let hours = number
                 endif
             endif
         endfor
     endif
+
+    let add_minutes = seconds/60
+    let seconds = seconds%60
+    let minutes = minutes + add_minutes
+    let add_hours = minutes/60
+    let minutes = minutes%60
+    let hours = hours+add_hours
+    
     let timerstr = hours." hours ".minutes." minutes ".seconds." seconds"
     echo timerstr
 endfu
 
+let g:quicknote_file = "~/doc/quicknote.md"
+let g:jump_cursor = [0,0]
+let g:jump_buffer = [0,0]
 
 fu! mytimer#star_timer()
     " ask task
     " set current timestamp
-    e ~/doc/quicknote.md
+    "
+    let bn = bufnr(g:quicknote_file)
+    if bn > 0 
+        exec "b ".bn
+    else
+        exec "e ".g:quicknote_file
+    endif
+    return 
     redraw
-    write
-    " Get the curren line:
+    " Get the curren line:  
 
     let line = getline(".")
     
