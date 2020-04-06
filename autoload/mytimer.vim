@@ -19,8 +19,8 @@ endfunction
 
 
 fu! mytimer#close()
-    if exists("g:timer_running")
-        unlet g:timer_running
+    if exists("s:timer_running")
+        unlet s:timer_running
     endif
     silent w
     " Avoid calling twice
@@ -102,19 +102,16 @@ fu! mytimer#parse_line(line)
     echo timerstr
 endfu
 
-let g:quicknote_file = "~/doc/quicknote.md"
-let g:jump_cursor = [0,0]
-let g:jump_buffer = [0,0]
 
 fu! mytimer#star_timer()
     " ask task
     " set current timestamp
     "
-    let bn = bufnr(g:quicknote_file)
+    let bn = bufnr(s:quicknote_file)
     if bn > 0 
         exec "b ".bn
     else
-        exec "e ".g:quicknote_file
+        exec "e ".s:quicknote_file
     endif
     return 
     redraw
@@ -137,7 +134,7 @@ fu! mytimer#star_timer()
     call AirlineInit()
     AirlineRefresh
     let s:mytime = localtime()
-    let g:timer_running = 0
+    let s:timer_running = 0
 endfunction
 
 
@@ -152,7 +149,6 @@ function! mytimer#new_note()
     " Use above rootfile
     e ~/doc/quicknote.md
 
-    " todo add string format to variable
     let l:time = strftime(s:myformat)
     let l:line = "# QN ".l:time." file:".l:currentFile.":".l:cur[1]
     let mylist = [ "", l:line,""]
@@ -199,6 +195,9 @@ fu! mytimer#init_timer()
     let s:mytime = localtime()
     let s:mytimer = timer_start(s:interval,"mytimer#timer_event", { "repeat" : -1 })
     let s:myformat = strftime("%Y-%m-%d %H:%M:%S")
+    let s:quicknote_file = "~/doc/quicknote.md"
+    let s:jump_cursor = [0,0]
+    let s:jump_buffer = [0,0]
 endfunction
 
 if !exists("s:mytimer")
