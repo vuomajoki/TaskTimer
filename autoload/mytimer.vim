@@ -66,11 +66,13 @@ endfunction
 
 fu! mytimer#parse_line(line) 
     " This is line for timer. Time: 4 min 40 s
-    let idx = match(a:line,"\\ctime:") 
     let hours = 0
     let minutes = 0
     let seconds = 0
-    if idx >= 0
+    let task = "Task"
+
+    let idx = match(a:line,"\\ctime:") 
+    if idx > 0
         let list = split(strpart(a:line,idx+5)," ",'\W\+')
         let readNumber = 1
         let number = 0
@@ -90,6 +92,7 @@ fu! mytimer#parse_line(line)
                 endif
             endif
         endfor
+        let task = trim(strpart(a:line,0,idx), " ")
     endif
     let add_minutes = seconds/60
     let seconds = seconds%60
@@ -97,44 +100,53 @@ fu! mytimer#parse_line(line)
     let add_hours = minutes/60
     let minutes = minutes%60
     let hours = hours+add_hours
-    
+    let totalSeconds = hours*60*60 + minutes*60 + seconds
+    let l:time = strftime(s:myformat)
     let timerstr = hours." hours ".minutes." minutes ".seconds." seconds"
-    echo timerstr
+    let g:timerid = l:time
+    let line = "# Timer ".l:time." for: ".timerstr." -- ".task
+    " echo line 
+    " echo "'".task."'"
+    return [totalSeconds,line]
 endfu
 
 
 fu! mytimer#star_timer()
     " ask task
     " set current timestamp
-    "
+    " buffer open 
     let bn = bufnr(s:quicknote_file)
     if bn > 0 
         exec "b ".bn
     else
         exec "e ".s:quicknote_file
     endif
-    return 
-    redraw
-    " Get the curren line:  
 
     let line = getline(".")
-    
-    " split line
-
-    let in = input("How many seconds to set the timer? (".s:duration.") ")
-    if in!= ""
-       let s:duration = eval(in) 
-    endif
-    redraw
-    echo "Timer set to ".s:duration." seconds"
-    " this is important that things will end
-    let s:done = 0
-    if !exists("s:mytimer")
-    endif
+    let pos = getcurpos()
+    let parsed = mytimer#parse_line(line)
+    call setline(pos[1],parsed[1])
+    let s:mytime = localtime()
+    let s:duration = parsed[0]
+    " add timer accent
     call AirlineInit()
     AirlineRefresh
-    let s:mytime = localtime()
-    let s:timer_running = 0
+    " return 
+    " " split line
+    " let in = input("How many seconds to set the timer? (".s:duration.") ")
+    " if in!= ""
+    "    let s:duration = eval(in) 
+    " endif
+    " redraw
+    " echo "Timer set to ".s:duration." seconds"
+    " " this is important that things will end
+    " let s:done = 0
+    " if !exists("s:mytimer")
+    " endif
+    " call AirlineInit()
+    " AirlineRefresh
+    " let s:mytime = localtime()
+    " let s:timer_running = 0
 endfunction
 
 
