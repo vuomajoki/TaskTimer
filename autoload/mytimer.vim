@@ -7,73 +7,64 @@
 fu! mytimer#timer_event(timer)
     let cur = localtime()
     let diff = cur-s:mytime
-    " echo "tidii ".s:done." ".s:duration." ".diff
-    if diff >= s:duration && !s:done
+    let s:time_left = s:duration - diff
+
+    if diff >= s:duration && !g:mytimer_done
         call mytimer#done()
-        let s:done = 1
+        let g:mytimer_done = 1
     endif
     call mytimer#check_time()
 endfunction
 
 
-
-
-fu! mytimer#close()
-    if exists("s:timer_running")
-        unlet s:timer_running
-    endif
-    silent w
-    " Avoid calling twice
-    au! * <buffer> 
-    silent Bdelete 
-    " echo "closed"
-endfu
-
+" fu! mytimer#close()
+"     if exists("s:timer_running")
+"         unlet s:timer_running
+"     endif
+"     silent w
+"     " Avoid calling twice
+"     au! * <buffer> 
+"     silent Bdelete 
+"     " echo "closed"
+" endfu
 
 fu! mytimer#done()
-    " move from insert mode
     call feedkeys("\e")
+    " go to buffer
+    " maybe save current buffer
     edit ~/doc/quicknote.md
-
-    " Find where thing was started
-    " with search
-
     call airline#parts#define_accent('mytimer', 'red')
     let g:airline_section_y = airline#section#create(['mytimer'])
     AirlineRefresh
-
     " au! * <buffer> 
     " au BufLeave <buffer> call mytimer#close()
     let lines = ["Time is up ".s:duration,""]
-    " call appendbufline(cool,0,lines)
     call append(line("$"),lines)
     normal G$
 endfunction
 
 fu! mytimer#check_time()
-    "    echo diff
-    let cur = localtime()
-    let diff = cur-s:mytime
-    let left = s:duration - diff
-    " add here different message after done
-    " Todo make conditional here
-    if diff >= s:duration || s:done
-        return "Done: ".left
-        let s:done = 1
-    endif
-    return "Timer: ".left
+    " todo format time nicely here
+    return "Timer: ".s:time_left
+endfunction
+
+fu! mytimer#format_duration(seconds)
+    return seconds
+endfunction
+
+fu! mytimer#parse_duration(duration)
+    return "time" 
 endfunction
 
 fu! mytimer#parse_line(line) 
-    " This is line for timer. Time: 4 min 40 s
     let hours = 0
     let minutes = 0
     let seconds = 0
     let task = "Task"
-
-    let idx = match(a:line,"\\ctime:") 
+    " todo restart timer from old timer line
+    let idx = match(a:line,"--") 
     if idx > 0
-        let list = split(strpart(a:line,idx+5)," ",'\W\+')
+        let list = split(strpart(a:line,idx+2),'\W\+')
         let readNumber = 1
         let number = 0
         for item in list
@@ -102,7 +93,8 @@ fu! mytimer#parse_line(line)
     let hours = hours+add_hours
     let totalSeconds = hours*60*60 + minutes*60 + seconds
     let l:time = strftime(s:myformat)
-    let timerstr = hours." hours ".minutes." minutes ".seconds." seconds"
+    " let timerstr = hours." hours ".minutes." minutes ".seconds." seconds"
+    let timerstr = printf("%02d:%02d:%02d",hours,minutes,seconds)
     let g:timerid = l:time
     let line = "# Timer ".l:time." for: ".timerstr." -- ".task
     " echo line 
@@ -115,12 +107,14 @@ fu! mytimer#star_timer()
     " ask task
     " set current timestamp
     " buffer open 
-    let bn = bufnr(s:quicknote_file)
-    if bn > 0 
-        exec "b ".bn
-    else
-        exec "e ".s:quicknote_file
-    endif
+    "
+    " This has to be on quicknote already
+    " let bn = bufnr(s:quicknote_file)
+    " if bn > 0 
+    "     exec "b! ".bn
+    " else
+    "     exec "e ".s:quicknote_file
+    " endif
 
     let line = getline(".")
     let pos = getcurpos()
@@ -128,25 +122,11 @@ fu! mytimer#star_timer()
     call setline(pos[1],parsed[1])
     let s:mytime = localtime()
     let s:duration = parsed[0]
+    let g:mytimer_done = 0
+    silent write
     " add timer accent
     call AirlineInit()
     AirlineRefresh
-    " return 
-    " " split line
-    " let in = input("How many seconds to set the timer? (".s:duration.") ")
-    " if in!= ""
-    "    let s:duration = eval(in) 
-    " endif
-    " redraw
-    " echo "Timer set to ".s:duration." seconds"
-    " " this is important that things will end
-    " let s:done = 0
-    " if !exists("s:mytimer")
-    " endif
-    " call AirlineInit()
-    " AirlineRefresh
-    " let s:mytime = localtime()
-    " let s:timer_running = 0
 endfunction
 
 
@@ -203,7 +183,7 @@ fu! mytimer#init_timer()
     let s:mywin = -1
     let s:duration = 10
     let s:interval = 1000
-    let s:done = 1
+    let s:mytimer_done = 1
     let s:mytime = localtime()
     let s:mytimer = timer_start(s:interval,"mytimer#timer_event", { "repeat" : -1 })
     let s:myformat = strftime("%Y-%m-%d %H:%M:%S")
