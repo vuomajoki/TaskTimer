@@ -91,7 +91,6 @@ fu! mytimer#parse_line(line)
             endif
         endfor
     endif
-
     let add_minutes = seconds/60
     let seconds = seconds%60
     let minutes = minutes + add_minutes
@@ -152,8 +151,9 @@ function! mytimer#new_note()
     " Test here if current file is readmefile
     " Use above rootfile
     e ~/doc/quicknote.md
-    
-    let l:time = strftime("%Y-%m-%d %H:%M:%S")
+
+    " todo add string format to variable
+    let l:time = strftime(s:myformat)
     let l:line = "# QN ".l:time." file:".l:currentFile.":".l:cur[1]
     let mylist = [ "", l:line,""]
     let line = line("$")
@@ -198,6 +198,7 @@ fu! mytimer#init_timer()
     let s:done = 1
     let s:mytime = localtime()
     let s:mytimer = timer_start(s:interval,"mytimer#timer_event", { "repeat" : -1 })
+    let s:myformat = strftime("%Y-%m-%d %H:%M:%S")
 endfunction
 
 if !exists("s:mytimer")
