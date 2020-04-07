@@ -29,6 +29,14 @@ endfunction
 " endfu
 
 fu! mytimer#done()
+    " Check if buffe exists
+    " let bn = bufnr(s:quicknote_file)
+    " if bn > 0 
+    "     exec "b! ".bn
+    " else
+    "     exec "e ".s:quicknote_file
+    " endif
+    "
     call feedkeys("\e")
     " go to buffer
     " maybe save current buffer
@@ -61,7 +69,7 @@ fu! mytimer#parse_line(line)
     let minutes = 0
     let seconds = 0
     let task = "Task"
-    " todo restart timer from old timer line
+    " todo move this part to parse duration
     let idx = match(a:line,"--") 
     if idx > 0
         let list = split(strpart(a:line,idx+2),'\W\+')
@@ -102,28 +110,21 @@ fu! mytimer#parse_line(line)
     return [totalSeconds,line]
 endfu
 
-
+" maybe at some point add timer
 fu! mytimer#star_timer()
-    " ask task
-    " set current timestamp
-    " buffer open 
-    "
-    " This has to be on quicknote already
-    " let bn = bufnr(s:quicknote_file)
-    " if bn > 0 
-    "     exec "b! ".bn
-    " else
-    "     exec "e ".s:quicknote_file
-    " endif
-
     let line = getline(".")
-    let pos = getcurpos()
+    " let pos = getcurpos()
     let parsed = mytimer#parse_line(line)
-    call setline(pos[1],parsed[1])
+    let lines = ["",parsed[1],""]
+    call append(line("$"),lines)
+    " call setline(pos[1],parsed[1])
+    " call setline(pos[1],parsed[1])
     let s:mytime = localtime()
     let s:duration = parsed[0]
+    let s:time_left = s:duration 
     let g:mytimer_done = 0
     silent write
+    normal G
     " add timer accent
     call AirlineInit()
     AirlineRefresh
@@ -141,11 +142,15 @@ function! mytimer#new_note()
     " Use above rootfile
     e ~/doc/quicknote.md
 
+    mkview
+
     let l:time = strftime(s:myformat)
     let l:line = "# QN ".l:time." file:".l:currentFile.":".l:cur[1]
     let mylist = [ "", l:line,""]
     let line = line("$")
     call append(line,mylist)
+
+    loadview
     normal Gzz$
     call feedkeys("a")
 endfunction
@@ -183,7 +188,8 @@ fu! mytimer#init_timer()
     let s:mywin = -1
     let s:duration = 10
     let s:interval = 1000
-    let s:mytimer_done = 1
+    " this is important to set
+    let g:mytimer_done = 1
     let s:mytime = localtime()
     let s:mytimer = timer_start(s:interval,"mytimer#timer_event", { "repeat" : -1 })
     let s:myformat = strftime("%Y-%m-%d %H:%M:%S")
