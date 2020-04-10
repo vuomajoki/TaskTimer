@@ -36,7 +36,8 @@ fu! mytimer#done()
     " else
     "     exec "e ".s:quicknote_file
     " endif
-    "
+    " test for -- 3 sec
+    call system("afplay ~/Documents/bell.mp3 &")
     call feedkeys("\e")
     " go to buffer
     " maybe save current buffer
@@ -100,7 +101,13 @@ fu! mytimer#parse_line(line)
     let minutes = minutes%60
     let hours = hours+add_hours
     let totalSeconds = hours*60*60 + minutes*60 + seconds
-    let l:time = strftime(s:myformat)
+
+    if exists("l:line")
+        unlet l:line
+    endif
+
+    let t = localtime()
+    let l:time = strftime(s:myformat, t)
     " let timerstr = hours." hours ".minutes." minutes ".seconds." seconds"
     let timerstr = printf("%02d:%02d:%02d",hours,minutes,seconds)
     let g:timerid = l:time
@@ -192,7 +199,8 @@ fu! mytimer#init_timer()
     let g:mytimer_done = 1
     let s:mytime = localtime()
     let s:mytimer = timer_start(s:interval,"mytimer#timer_event", { "repeat" : -1 })
-    let s:myformat = strftime("%Y-%m-%d %H:%M:%S")
+    "let s:myformat = strftime("%Y-%m-%d %H:%M:%S")
+    let s:myformat = "%Y-%m-%d %H:%M:%S"
     let s:quicknote_file = "~/doc/quicknote.md"
     let s:jump_cursor = [0,0]
     let s:jump_buffer = [0,0]
@@ -203,3 +211,5 @@ if !exists("s:mytimer")
 endif
 
 call mytimer#init_timer()
+
+
