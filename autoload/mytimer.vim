@@ -1,14 +1,9 @@
 " My timer functions
-"
-
-" if exists
-"
 
 fu! mytimer#timer_event(timer)
     let cur = localtime()
     let diff = cur-s:mytime
     let s:time_left = s:duration - diff
-
     if diff >= s:duration && !g:mytimer_done
         call mytimer#done()
         let g:mytimer_done = 1
@@ -16,35 +11,13 @@ fu! mytimer#timer_event(timer)
     call mytimer#check_time()
 endfunction
 
-
-" fu! mytimer#close()
-"     if exists("s:timer_running")
-"         unlet s:timer_running
-"     endif
-"     silent w
-"     " Avoid calling twice
-"     au! * <buffer> 
-"     silent Bdelete 
-"     " echo "closed"
-" endfu
-
 fu! mytimer#done()
-    " Check if buffe exists
-    " let bn = bufnr(s:quicknote_file)
-    " if bn > 0 
-    "     exec "b! ".bn
-    " else
-    "     exec "e ".s:quicknote_file
-    " endif
-    " test for -- 3 sec
     call system("afplay ~/Documents/bell.mp3 &")
     call feedkeys("\e")
-    " go to buffer
-    " maybe save current buffer
     edit ~/doc/quicknote.md
-    call airline#parts#define_accent('mytimer', 'red')
-    let g:airline_section_y = airline#section#create(['mytimer'])
-    AirlineRefresh
+    " call airline#parts#define_accent('mytimer', 'red')
+    " let g:airline_section_y = airline#section#create(['mytimer'])
+    " AirlineRefresh
     " au! * <buffer> 
     " au BufLeave <buffer> call mytimer#close()
     let lines = ["Time is up ".s:duration,""]
@@ -65,11 +38,126 @@ fu! mytimer#parse_duration(duration)
     return "time" 
 endfunction
 
-fu! mytimer#parse_line(line) 
-    let hours = 0
-    let minutes = 0
+" dictionary
+"
+let g:keywords_for_time = { "minutes" : ["minute","minutes","min","m"], 
+            \ "seconds" : ["second","seconds","sec","s"], 
+            \ "hours" : ["hour","hours","h"],
+            \ "days" : ["day","days","d"],
+            \ "weeks" : ["week","weeks"], 
+            \ "years" : ["year","years"],  
+            \ }   
+
+let g:second_variant = { "minutes" : 60, 
+            \ "seconds" : 1, 
+            \ "hours" : 60*60,
+            \ "days" : 24*60*60,
+            \ "weeks" : 7*24*60*60,
+            \ "years" : 365*24*60*60 
+            \ }   
+
+let g:descenting_time_values = [ "years", "weeks", "days", "hours", "minutes", "seconds" ]
+
+fu! IsTimeKeyword(word) 
+    " check is numeric
+    if a:word =~# '^\d\+$'
+        return 1
+    endif
+    for item in items(g:keywords_for_time)
+        let words = item[1]
+        let idx = index(words,a:word)
+        if idx >= 0
+            return 1
+        endif
+    endfor
+    return 0
+endfunction
+
+fu! ParseExpression(str) 
+    let items = split(a:str)
+    let words = [] 
+    let isTime = 1
+    let tags = []
+    for item in items 
+        let word = trim(item)
+        if stridx(word,"#") == 0
+            call add(tags,word)
+            let isTime = 0
+            continue
+        endif
+        if !IsTimeKeyword(word)
+            let isTime = 0 
+        endif
+        call add(words,word)
+    endfor
+    return { "words" : words, "isTime" : isTime, "tags" : tags}
+endfunction
+
+fu! MyTimeSeparate(seconds)
+    let time = {}
+    let seconds = a:seconds
+    for item in g:descenting_time_values
+        let val = g:second_variant[item]
+        let time[item] = seconds / val 
+        let seconds = seconds % val 
+    endfor
+    return time
+endfunction
+
+fu! ResolveTime(words)
+    let time = {}
+    let number = 0
+    let isNumber = 1
+    for item in a:words
+        if isNumber
+            let number = str2nr(item)
+            let isNumber = 0
+        else
+            for [key, value] in items(g:keywords_for_time)
+                if index(value,item)>=0
+                    let time[key] = number
+                endif
+            endfor
+            let isNumber = 1
+        endif
+    endfor
     let seconds = 0
-    let task = "Task"
+    for [key, value] in items(time)
+       let seconds += g:second_variant[key] * value
+    endfor
+    return seconds
+
+endfunction
+
+fu! mytimer#line_parse(line) 
+    " Trim unnecessary stuff -- This is timer -- 4 minutes 6 hours 62 seconds 1 day 7 weeks 45 years -- #vim #presence #velka
+    let line = trim(a:line,"#\"/ ")
+    let list = split(l:line,'--')
+    let tags = []
+    let sentences = []
+    let time_periods = []
+    for item in list
+       let exp = trim(item)
+       let parsed = ParseExpression(item)
+       if parsed["isTime"]
+            let seconds = ResolveTime(parsed["words"])
+            echo MyTimeSeparate(seconds)
+        else 
+            let tags = parsed["tags"]
+            if len(tags) > 0
+                echo "Tags "
+                echo tags
+            endif
+       endif
+    endfor
+endfunction
+
+fu! mytimer#parse_line(line) 
+     let hours = 0
+     let minutes = 0
+     let seconds = 0
+     let task = "Task"
+
     " todo move this part to parse duration
     let idx = match(a:line,"--") 
     if idx > 0
@@ -121,6 +209,8 @@ endfu
 fu! mytimer#star_timer()
     let line = getline(".")
     " let pos = getcurpos()
+    "
+     
     let parsed = mytimer#parse_line(line)
     let lines = ["",parsed[1],""]
     call append(line("$"),lines)
@@ -191,15 +281,12 @@ function! mytimer#go_to_spot()
 endfunction
 
 fu! mytimer#init_timer()
-    let s:mymessage = "Current session is over. Take a break!"
-    let s:mywin = -1
     let s:duration = 10
     let s:interval = 1000
     " this is important to set
     let g:mytimer_done = 1
     let s:mytime = localtime()
     let s:mytimer = timer_start(s:interval,"mytimer#timer_event", { "repeat" : -1 })
-    "let s:myformat = strftime("%Y-%m-%d %H:%M:%S")
     let s:myformat = "%Y-%m-%d %H:%M:%S"
     let s:quicknote_file = "~/doc/quicknote.md"
     let s:jump_cursor = [0,0]
